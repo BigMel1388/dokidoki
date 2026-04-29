@@ -1,24 +1,26 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ImageBackground,
-  TouchableOpacity,
-  FlatList,
-  Switch,
-  Animated,
-} from "react-native";
+// === Imports Section ===
 import { Ionicons } from "@expo/vector-icons";
-import * as Notifications from "expo-notifications";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { useRouter } from "expo-router";
-import { useRef } from "react";
 import * as NavigationBar from "expo-navigation-bar";
+import * as Notifications from "expo-notifications";
+import { useRouter } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  FlatList,
+  ImageBackground,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import HomeBar from "../components/HomeBar";
 
+// === Constants ===
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+// === Type Definitions ===
 type Alarm = {
   id: string;
   hour: number;
@@ -27,15 +29,19 @@ type Alarm = {
   repeat: boolean[];
 };
 
+// === Main Component ===
 export default function Clock() {
 
+  // === Navigation & Router ===
   const router = useRouter();
 
+  // === Animation Values ===
   const homeAnim = useRef(new Animated.Value(0)).current;
   const clockAnim = useRef(new Animated.Value(0)).current;
   const planetAnim = useRef(new Animated.Value(0)).current;
   const profileAnim = useRef(new Animated.Value(0)).current;
 
+  // === Animation Helper ===
   function animateIcon(anim: Animated.Value) {
     Animated.sequence([
       Animated.timing(anim, {
@@ -51,16 +57,19 @@ export default function Clock() {
     ]).start();
   }
 
+  // === State Management ===
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [showPicker, setShowPicker] = useState(false);
   const [selectedAlarm, setSelectedAlarm] = useState<string | null>(null);
 
+  // === Effects ===
   // Hide navigation bar
   useEffect(() => {
     NavigationBar.setBehaviorAsync("overlay-swipe");
     NavigationBar.setVisibilityAsync("hidden");
   }, []);
 
+  // Request notification permissions and setup channel
   useEffect(() => {
     Notifications.requestPermissionsAsync();
 
@@ -72,6 +81,8 @@ export default function Clock() {
 
   }, []);
 
+  // === Core Functions ===
+  // Schedule a new alarm notification
   async function scheduleAlarm(alarm: Alarm) {
     await Notifications.scheduleNotificationAsync({
       content: {
@@ -88,6 +99,7 @@ export default function Clock() {
     });
   }
 
+  // Toggle alarm enabled/disabled state
   function toggleAlarm(id: string) {
     const updated = alarms.map((alarm) => {
       if (alarm.id === id) {
@@ -103,6 +115,7 @@ export default function Clock() {
     setAlarms(updated);
   }
 
+  // Toggle repeating days for a specific alarm
   function toggleDay(alarmId: string, index: number) {
     const updated = alarms.map((alarm) => {
       if (alarm.id === alarmId) {
@@ -116,6 +129,7 @@ export default function Clock() {
     setAlarms(updated);
   }
 
+  // Create and add a new alarm
   function addAlarm() {
     const newAlarm: Alarm = {
       id: Date.now().toString(),
@@ -128,11 +142,13 @@ export default function Clock() {
     setAlarms([...alarms, newAlarm]);
   }
 
+  // Open the time picker modal
   function openTimePicker(id: string) {
     setSelectedAlarm(id);
     setShowPicker(true);
   }
 
+  // Handle time selection from the picker
   function onTimeSelected(event: any, date?: Date) {
     setShowPicker(false);
     if (!date || !selectedAlarm) return;
@@ -151,12 +167,14 @@ export default function Clock() {
     setAlarms(updated);
   }
 
+  // Helper to format time as HH.MM
   function formatTime(hour: number, minute: number) {
     return `${hour.toString().padStart(2, "0")}.${minute
       .toString()
       .padStart(2, "0")}`;
   }
 
+  // === Render / UI ===
   return (
     <View style={styles.container}>
       <ImageBackground
@@ -167,6 +185,7 @@ export default function Clock() {
         resizeMode="cover"
       >
 
+        {/* Alarm List */}
         <FlatList
           data={alarms}
           keyExtractor={(item) => item.id}
@@ -204,6 +223,7 @@ export default function Clock() {
           )}
         />
 
+        {/* Time Picker Modal */}
         {showPicker && (
           <DateTimePicker
             mode="time"
@@ -213,16 +233,19 @@ export default function Clock() {
           />
         )}
 
+        {/* Add Alarm Button */}
         <TouchableOpacity style={styles.addButton} onPress={addAlarm}>
           <Ionicons name="add" size={30} color="white" />
         </TouchableOpacity>
 
       </ImageBackground>
+      {/* Bottom Navigation Bar */}
       <HomeBar />
     </View>
   );
 }
 
+// === Styles Section ===
 const styles = StyleSheet.create({
 
   container: {

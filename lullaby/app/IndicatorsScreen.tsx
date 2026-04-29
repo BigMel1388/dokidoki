@@ -1,3 +1,4 @@
+// === Imports Section ===
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -6,73 +7,108 @@ import {
   ImageBackground,
   Dimensions,
   ScrollView,
-  TouchableOpacity,
 } from "react-native";
 import { LineChart } from "react-native-chart-kit";
 import * as NavigationBar from "expo-navigation-bar";
+import { createClient } from "@supabase/supabase-js";
 import HomeBar from "../components/HomeBar";
 
+// === Global Constants ===
 const screenWidth = Dimensions.get("window").width;
 
-const ESP_IP = "172.23.83.73"; // Updated IP
+/* ✅ SUPABASE */
+// === Database Client Setup ===
+const supabase = createClient(
+  "https://wjvjxxrgwipmarpwpebp.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indqdmp4eHJnd2lwbWFycHdwZWJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjExNjcsImV4cCI6MjA4OTIzNzE2N30.5z2fmWyVL5X8PImk4fLkn_M5J11YGYlGSMVOzHyqJPM"
+);
 
-type SensorData = {
-  temperature: number;
-  humidity: number;
-  pressure: number;
-  co2: number;
-};
-
+// === Main Component ===
 export default function IndicatorsScreen() {
+  // === State Management ===
   const [temperature, setTemperature] = useState<number[]>([]);
   const [humidity, setHumidity] = useState<number[]>([]);
   const [pressure, setPressure] = useState<number[]>([]);
   const [co2, setCo2] = useState<number[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
+  const [sleepScore, setSleepScore] = useState<number>(0);
 
-  console.log("📊 IndicatorsScreen rendered");
+  // === Helper Functions ===
+  /* ✅ SAME FORMULA */
+  function calculateSleepQuality(
+    temp: number,
+    hum: number,
+    co: number,
+    press: number
+  ) {
+    let score = 100;
 
-  const fetchSensor = async () => {
-    console.log("🔄 Fetching sensor data from ESP32...");
+    if (temp < 18 || temp > 24) score -= 25;
+    if (hum < 40 || hum > 60) score -= 25;
+    if (co > 800) score -= 25;
+    if (press < 990 || press > 1030) score -= 10;
+
+    return Math.max(score, 0);
+  }
+
+  // === Data Fetching ===
+  const loadData = async () => {
     try {
-      setConnectionStatus('connecting');
-      const res = await fetch(`http://${ESP_IP}/sensor`);
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-      const data: SensorData = await res.json();
-      console.log("✅ Sensor data received:", data);
+      const { data, error } = await supabase
+        .from("sensor_data")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(6);
 
-      setTemperature(prev => [...prev.slice(-6), data.temperature]);
-      setHumidity(prev => [...prev.slice(-6), data.humidity]);
-      setPressure(prev => [...prev.slice(-6), data.pressure]);
-      setCo2(prev => [...prev.slice(-6), data.co2]);
-      setIsLoading(false);
-      setConnectionStatus('connected');
-    } catch (error) {
-      console.log("❌ ESP connection error", error);
-      setConnectionStatus('disconnected');
-      setIsLoading(false);
+      if (error) {
+        console.log("❌ Supabase error:", error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const reversed = data.reverse();
+
+        const tempArr = reversed.map((d) => d.temperature);
+        const humArr = reversed.map((d) => d.humidity);
+        const presArr = reversed.map((d) => d.pressure);
+        const coArr = reversed.map((d) => d.co2);
+
+        setTemperature(tempArr);
+        setHumidity(humArr);
+        setPressure(presArr);
+        setCo2(coArr);
+
+        /* ✅ latest data for sleep score */
+        const last = reversed[reversed.length - 1];
+
+        const score = calculateSleepQuality(
+          last.temperature,
+          last.humidity,
+          last.co2,
+          last.pressure
+        );
+
+        setSleepScore(score);
+      }
+    } catch (err) {
+      console.log("❌ Load error:", err);
     }
   };
 
+  // === Effects ===
   useEffect(() => {
-    console.log("🎮 Setting up Android navigation bar");
+    // Hide navigation bar
     NavigationBar.setBehaviorAsync("overlay-swipe");
     NavigationBar.setVisibilityAsync("hidden");
+
+    // Fetch initial data and start polling
+    loadData();
+    const interval = setInterval(loadData, 5000);
+
+    // Cleanup interval on unmount
+    return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    console.log("⏱️ Setting up sensor fetch interval (every 2s)");
-    fetchSensor();
-    const interval = setInterval(fetchSensor, 2000);
-    return () => {
-      console.log("🧹 Cleaning up sensor fetch interval");
-      clearInterval(interval);
-    };
-  }, []);
-
+  // === Render / UI ===
   return (
     <ImageBackground
       source={{
@@ -81,95 +117,59 @@ export default function IndicatorsScreen() {
       resizeMode="cover"
       style={styles.background}
     >
-      <ScrollView contentContainerStyle={styles.container} style={styles.scrollView}>
-        
+      <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Indicators</Text>
 
-        {isLoading && (
-          <View style={styles.statusCard}>
-            <Text style={styles.statusText}>⏳ ESP32 Status: Connecting...</Text>
-            <Text style={styles.statusSubtext}>Attempting to connect to {ESP_IP}</Text>
-          </View>
-        )}
+        {/* ✅ Sleep Score */}
+        <View style={styles.scoreCard}>
+          <Text style={styles.scoreTitle}>Sleep Enviroment Quality</Text>
+          <Text style={styles.scoreValue}>{sleepScore}%</Text>z
+        </View>
 
-        {!isLoading && connectionStatus === 'disconnected' && (
-          <View style={styles.statusCard}>
-            <Text style={styles.statusText}>📡 ESP32 Status: Disconnected</Text>
-            <Text style={styles.statusSubtext}>Please check your ESP32 connection and IP address ({ESP_IP})</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={() => {
-              setIsLoading(true);
-              fetchSensor();
-            }}>
-              <Text style={styles.retryText}>🔄 Retry Connection</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {!isLoading && connectionStatus === 'connected' && (
-          <View style={styles.statusCard}>
-            <Text style={styles.statusText}>✅ ESP32 Status: Connected</Text>
-          </View>
-        )}
-
-        {/* TEMPERATURE */}
+        {/* Temperature */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Temperature</Text>
           <LineChart
             data={{
-              labels: temperature.length ? ["1","2","3","4","5","6"].slice(-temperature.length) : ["0"],
+              labels: ["1","2","3","4","5","6"].slice(-temperature.length),
               datasets: [{ data: temperature.length ? temperature : [0] }],
             }}
             width={screenWidth - 80}
             height={150}
             withDots={false}
-            chartConfig={{
-              backgroundGradientFrom: "#ffffff",
-              backgroundGradientTo: "#ffffff",
-              color: () => "#7CC4C2",
-              labelColor: () => "#555",
-            }}
+            chartConfig={chartConfig("#7CC4C2")}
             style={styles.chart}
           />
         </View>
 
-        {/* HUMIDITY */}
+        {/* Humidity */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Humidity</Text>
           <LineChart
             data={{
-              labels: humidity.length ? ["1","2","3","4","5","6"].slice(-humidity.length) : ["0"],
+              labels: ["1","2","3","4","5","6"].slice(-humidity.length),
               datasets: [{ data: humidity.length ? humidity : [0] }],
             }}
             width={screenWidth - 80}
             height={150}
             withDots={false}
-            chartConfig={{
-              backgroundGradientFrom: "#ffffff",
-              backgroundGradientTo: "#ffffff",
-              color: () => "#FF6B6B",
-              labelColor: () => "#555",
-            }}
+            chartConfig={chartConfig("#FF6B6B")}
             style={styles.chart}
           />
         </View>
 
-        {/* PRESSURE */}
+        {/* Pressure */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Pressure</Text>
           <LineChart
             data={{
-              labels: pressure.length ? ["1","2","3","4","5","6"].slice(-pressure.length) : ["0"],
+              labels: ["1","2","3","4","5","6"].slice(-pressure.length),
               datasets: [{ data: pressure.length ? pressure : [0] }],
             }}
             width={screenWidth - 80}
             height={150}
             withDots={false}
-            chartConfig={{
-              backgroundGradientFrom: "#ffffff",
-              backgroundGradientTo: "#ffffff",
-              color: () => "#4ECDC4",
-              labelColor: () => "#555",
-            }}
+            chartConfig={chartConfig("#4ECDC4")}
             style={styles.chart}
           />
         </View>
@@ -179,91 +179,83 @@ export default function IndicatorsScreen() {
           <Text style={styles.cardTitle}>CO₂ level</Text>
           <LineChart
             data={{
-              labels: co2.length ? ["1","2","3","4","5","6"].slice(-co2.length) : ["0"],
+              labels: ["1","2","3","4","5","6"].slice(-co2.length),
               datasets: [{ data: co2.length ? co2 : [0] }],
             }}
             width={screenWidth - 80}
             height={150}
             withDots={false}
-            chartConfig={{
-              backgroundGradientFrom: "#ffffff",
-              backgroundGradientTo: "#ffffff",
-              color: () => "#8A78D6",
-              labelColor: () => "#555",
-            }}
+            chartConfig={chartConfig("#8A78D6")}
             style={styles.chart}
           />
         </View>
-
       </ScrollView>
+
+      {/* Bottom Navigation */}
       <HomeBar />
     </ImageBackground>
   );
 }
 
+// === Chart Configuration ===
+/* ✅ reusable chart config */
+const chartConfig = (color: string) => ({
+  backgroundGradientFrom: "#ffffff",
+  backgroundGradientTo: "#ffffff",
+  color: () => color,
+  labelColor: () => "#555",
+});
+
+// === Styles Section ===
 const styles = StyleSheet.create({
-  background: { 
-    flex: 1,
-    position: 'relative',
-  },
+  background: { flex: 1 },
+
   container: {
     paddingTop: 80,
     paddingHorizontal: 20,
     paddingBottom: 100,
   },
-  scrollView: {
-    flex: 1,
-  },
+
   title: {
     fontSize: 38,
     fontWeight: "700",
     color: "white",
     marginBottom: 20,
   },
+
+  scoreCard: {
+    backgroundColor: "rgba(255,255,255,0.9)",
+    borderRadius: 20,
+    padding: 20,
+    alignItems: "center",
+    marginBottom: 20,
+  },
+
+  scoreTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
+  scoreValue: {
+    fontSize: 42,
+    fontWeight: "bold",
+    color: "#7CC4C2",
+  },
+
   card: {
     backgroundColor: "rgba(255,255,255,0.9)",
     borderRadius: 18,
     padding: 15,
     marginBottom: 25,
   },
+
   cardTitle: {
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 10,
   },
+
   chart: {
     borderRadius: 16,
-  },
-  statusCard: {
-    backgroundColor: "rgba(255,255,255,0.9)",
-    borderRadius: 18,
-    padding: 20,
-    marginBottom: 25,
-    alignItems: "center",
-  },
-  statusText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-    textAlign: "center",
-  },
-  statusSubtext: {
-    fontSize: 14,
-    color: "#666",
-    textAlign: "center",
-    marginTop: 5,
-    marginBottom: 15,
-  },
-  retryButton: {
-    backgroundColor: "#C9A4E7",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    marginTop: 10,
-  },
-  retryText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
   },
 });

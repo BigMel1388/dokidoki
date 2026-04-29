@@ -1,20 +1,22 @@
-import React, { useEffect, useState, useCallback } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ImageBackground,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-} from "react-native";
-import { useRouter } from "expo-router";
+// === Imports Section ===
 import { useFocusEffect } from "@react-navigation/native";
-import * as NavigationBar from "expo-navigation-bar";
 import { BlurView } from "expo-blur";
+import * as NavigationBar from "expo-navigation-bar";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  Alert,
+  ImageBackground,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import HomeBar from "../components/HomeBar";
 import AppLocker from "../modules/AppLocker";
 
+// === Type Definitions ===
 type PermissionStatus = {
   usageStats: boolean;
   overlay: boolean;
@@ -22,7 +24,9 @@ type PermissionStatus = {
 
 type ActiveMode = "sleep" | "study" | "work" | null;
 
+// === Main Component ===
 export default function Locker() {
+  // === State Management ===
   const router = useRouter();
   const [permissions, setPermissions] = useState<PermissionStatus>({
     usageStats: false,
@@ -31,7 +35,9 @@ export default function Locker() {
   const [activeMode, setActiveMode] = useState<ActiveMode>(null);
   const [loading, setLoading] = useState(false);
 
+  // === Effects & Callbacks ===
   useEffect(() => {
+    // Hide navigation bar
     NavigationBar.setBehaviorAsync("overlay-swipe");
     NavigationBar.setVisibilityAsync("hidden");
   }, []);
@@ -44,6 +50,7 @@ export default function Locker() {
     }, [])
   );
 
+  // === Permission & Service Helpers ===
   const checkPermissions = async () => {
     const usageStats = await AppLocker.hasUsageStatsPermission();
     const overlay = await AppLocker.hasOverlayPermission();
@@ -57,6 +64,7 @@ export default function Locker() {
 
   const allPermissionsGranted = permissions.usageStats && permissions.overlay;
 
+  // === UI Interaction Handlers ===
   const handleStopAll = async () => {
     Alert.alert("Stop All Modes", "Are you sure you want to stop the active mode?", [
       { text: "Cancel", style: "cancel" },
@@ -73,6 +81,7 @@ export default function Locker() {
     ]);
   };
 
+  // === Reusable Child Component ===
   const ModeCard = ({
     emoji,
     title,
@@ -127,6 +136,7 @@ export default function Locker() {
     );
   };
 
+  // === Render / UI ===
   return (
     <View style={styles.container}>
       <ImageBackground
@@ -227,12 +237,14 @@ export default function Locker() {
           <View style={{ height: 100 }} />
         </ScrollView>
 
+        {/* Bottom Navigation */}
         <HomeBar />
       </ImageBackground>
     </View>
   );
 }
 
+// === Styles Section ===
 const styles = StyleSheet.create({
   container: { flex: 1 },
 

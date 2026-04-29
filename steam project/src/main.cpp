@@ -6,6 +6,7 @@
 #include <WiFi.h>
 #include <WiFiManager.h>
 #include <HTTPClient.h>
+#include <time.h> // ✅ ADDED
 
 #define SEALEVELPRESSURE_HPA (1013.25)
 
@@ -26,6 +27,20 @@ WiFiManager wifiManager;
 /* Sensor flags */
 bool bmeReady = false;
 bool ccsReady = false;
+
+/* ================= TIME FUNCTION (ADDED) ================= */
+String getCurrentTime()
+{
+    struct tm timeinfo;
+    if (!getLocalTime(&timeinfo))
+    {
+        return "No Time";
+    }
+
+    char timeString[20];
+    strftime(timeString, sizeof(timeString), "%H:%M:%S", &timeinfo);
+    return String(timeString);
+}
 
 /* Send data to Supabase */
 void sendDataToSupabase()
@@ -101,7 +116,17 @@ void updateLCDDisplay()
         lcd.print("ppm");
     }
 
-    screen = (screen + 1) % 3;
+    /* ===== TIME SCREEN (ADDED) ===== */
+    if (screen == 3)
+    {
+        lcd.setCursor(0, 0);
+        lcd.print("Time");
+
+        lcd.setCursor(0, 1);
+        lcd.print(getCurrentTime());
+    }
+
+    screen = (screen + 1) % 4; // ✅ CHANGED from 3 → 4
 }
 
 void setup()
@@ -131,7 +156,7 @@ void setup()
     lcd.setCursor(0, 0);
     lcd.print("Connecting WiFi");
 
-    if (!wifiManager.autoConnect("SleepTracker-ESP32", "password123"))
+    if (!wifiManager.autoConnect("Sleep Environment Monitoring System", "lullaby8989"))
     {
         ESP.restart();
     }
@@ -142,6 +167,9 @@ void setup()
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("WiFi Connected");
+
+    /* ===== NTP TIME (ADDED) ===== */
+    configTime(7 * 3600, 0, "pool.ntp.org", "time.nist.gov");
 }
 
 void loop()

@@ -1,32 +1,40 @@
+// === Imports Section ===
+import * as NavigationBar from "expo-navigation-bar";
 import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ImageBackground,
-  TextInput,
-  TouchableOpacity,
   Alert,
+  ImageBackground,
   KeyboardAvoidingView,
   Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import * as NavigationBar from "expo-navigation-bar";
 import HomeBar from "../components/HomeBar";
 import { loadName, saveName } from "../utils/userStore";
 
+// === Main Component ===
 export default function Profile() {
+  // === State Management ===
   const [name, setName] = useState("Guest");
   const [editMode, setEditMode] = useState(false);
   const [editValue, setEditValue] = useState("");
 
+  // === Effects ===
   useEffect(() => {
+    // Hide navigation bar
     NavigationBar.setBehaviorAsync("overlay-swipe");
     NavigationBar.setVisibilityAsync("hidden");
+
+    // Load saved name
     loadName().then((saved) => {
       if (saved) setName(saved);
     });
   }, []);
 
+  // === Event Handlers ===
   const handleEdit = () => {
     setEditValue(name);
     setEditMode(true);
@@ -48,6 +56,7 @@ export default function Profile() {
     setEditValue("");
   };
 
+  // === Render / UI ===
   return (
     <View style={styles.container}>
       <ImageBackground
@@ -66,6 +75,7 @@ export default function Profile() {
             <View style={styles.card}>
               <Text style={styles.label}>Name</Text>
 
+              {/* Edit Mode vs View Mode */}
               {editMode ? (
                 <>
                   <TextInput
@@ -99,12 +109,14 @@ export default function Profile() {
           </View>
         </KeyboardAvoidingView>
 
+        {/* Bottom Navigation */}
         <HomeBar />
       </ImageBackground>
     </View>
   );
 }
 
+// === Styles Section ===
 const styles = StyleSheet.create({
   container: { flex: 1 },
 

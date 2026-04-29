@@ -1,3 +1,4 @@
+// === Imports Section ===
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -13,6 +14,7 @@ import * as NavigationBar from "expo-navigation-bar";
 import { BlurView } from "expo-blur";
 import AppLocker from "../modules/AppLocker";
 
+// === Constants ===
 const GRACE_OPTIONS = [
   { label: "1 min ⚡", value: 1, isTest: true },
   { label: "20 min", value: 20 },
@@ -20,7 +22,9 @@ const GRACE_OPTIONS = [
   { label: "40 min", value: 40 },
 ];
 
+// === Main Component ===
 export default function LockerStudy() {
+  // === State & Refs ===
   const router = useRouter();
   const [selectedGrace, setSelectedGrace] = useState<1 | 20 | 30 | 40>(20);
   const [isActive, setIsActive] = useState(false);
@@ -28,6 +32,7 @@ export default function LockerStudy() {
   const [remainingSeconds, setRemainingSeconds] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // === Effects ===
   useEffect(() => {
     NavigationBar.setBehaviorAsync("overlay-swipe");
     NavigationBar.setVisibilityAsync("hidden");
@@ -39,6 +44,7 @@ export default function LockerStudy() {
     };
   }, []);
 
+  // === Countdown Logic ===
   const startCountdown = (minutes: number) => {
     if (timerRef.current) clearInterval(timerRef.current);
     setRemainingSeconds(minutes * 60);
@@ -58,6 +64,7 @@ export default function LockerStudy() {
     setRemainingSeconds(0);
   };
 
+  // === Action Handlers ===
   const handleStart = async () => {
     setLoading(true);
     try {
@@ -79,12 +86,14 @@ export default function LockerStudy() {
 
   // Stop tidak diizinkan dari UI — hanya bisa dari notifikasi sistem
 
+  // === Formatter Helper ===
   const formatCountdown = (secs: number): string => {
     const m = Math.floor(secs / 60).toString().padStart(2, "0");
     const s = (secs % 60).toString().padStart(2, "0");
     return `${m}:${s}`;
   };
 
+  // === Render / UI ===
   return (
     <View style={styles.container}>
       <ImageBackground
@@ -98,6 +107,7 @@ export default function LockerStudy() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          {/* Header */}
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Text style={styles.backText}>‹ Back</Text>
           </TouchableOpacity>
@@ -189,6 +199,7 @@ export default function LockerStudy() {
   );
 }
 
+// === Styles Section ===
 const styles = StyleSheet.create({
   container: { flex: 1 },
   background: { flex: 1 },

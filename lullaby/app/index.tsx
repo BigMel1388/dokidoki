@@ -1,26 +1,31 @@
-import React, { useState, useRef, useEffect } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
-  ImageBackground,
-  Animated,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
-import { useRouter } from "expo-router";
+// === Imports Section ===
 import { BlurView } from "expo-blur";
 import * as NavigationBar from "expo-navigation-bar";
-import { saveName, loadName } from "../utils/userStore";
+import { useRouter } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  ImageBackground,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { loadName, saveName } from "../utils/userStore";
 
+// === Main Component ===
 export default function Index() {
+  // === State & Refs ===
   const [name, setName] = useState("");
   const router = useRouter();
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
+  // === Effects ===
   useEffect(() => {
+    // Hide navigation bar on Android
     NavigationBar.setBehaviorAsync("overlay-swipe");
     NavigationBar.setVisibilityAsync("hidden");
 
@@ -32,10 +37,12 @@ export default function Index() {
     });
   }, []);
 
+  // === Event Handlers ===
   const handleSubmit = async () => {
     if (!name.trim()) return;
     await saveName(name.trim());
 
+    // Fade out animation before navigating
     Animated.timing(fadeAnim, {
       toValue: 0,
       duration: 800,
@@ -45,6 +52,7 @@ export default function Index() {
     });
   };
 
+  // === Render / UI ===
   return (
     <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
       <ImageBackground
@@ -57,6 +65,7 @@ export default function Index() {
         {/* Blur Layer */}
         <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFill} />
 
+        {/* Input Container */}
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={styles.container}
@@ -82,6 +91,7 @@ export default function Index() {
   );
 }
 
+// === Styles Section ===
 const styles = StyleSheet.create({
   background: {
     flex: 1,

@@ -1,30 +1,36 @@
-import React, { useEffect, useState } from "react";
-import HomeBar from "../components/HomeBar";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ImageBackground,
-} from "react-native";
-import * as NavigationBar from "expo-navigation-bar";
+// === Imports Section ===
 import { useFocusEffect } from "@react-navigation/native";
-import { useCallback } from "react";
+import * as NavigationBar from "expo-navigation-bar";
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  ImageBackground,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import HomeBar from "../components/HomeBar";
 import { loadName } from "../utils/userStore";
 
+// === Main Component ===
 export default function Home() {
+  // === State Management ===
   const [userName, setUserName] = useState("");
 
+  // === Effects ===
+  // Hide the system navigation bar when the component mounts
   useEffect(() => {
     NavigationBar.setBehaviorAsync("overlay-swipe");
     NavigationBar.setVisibilityAsync("hidden");
   }, []);
 
+  // Reload user name every time the screen comes into focus
   useFocusEffect(
     useCallback(() => {
       loadName().then((n) => setUserName(n));
     }, [])
   );
 
+  // === Render / UI ===
   return (
     <View style={styles.container}>
       <ImageBackground
@@ -35,6 +41,7 @@ export default function Home() {
         resizeMode="cover"
       >
 
+        {/* Content Container */}
         <View style={styles.centerContent}>
           {userName ? (
             <Text style={styles.greeting}>Good night, {userName} 🌙</Text>
@@ -51,11 +58,13 @@ export default function Home() {
         </View>
 
       </ImageBackground>
+      {/* Bottom Navigation Bar */}
       <HomeBar />
     </View>
   );
 }
 
+// === Styles Section ===
 const styles = StyleSheet.create({
 
   container: {

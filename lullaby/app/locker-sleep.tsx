@@ -1,23 +1,25 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ImageBackground,
-  TouchableOpacity,
-  ScrollView,
-  Switch,
-  Alert,
-  Platform,
-  Linking,
-} from "react-native";
+// === Imports Section ===
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
-import * as NavigationBar from "expo-navigation-bar";
 import { BlurView } from "expo-blur";
+import * as NavigationBar from "expo-navigation-bar";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Alert,
+  ImageBackground,
+  Linking,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import AppLocker from "../modules/AppLocker";
 
+// === Helper Functions ===
 const formatTime = (date: Date): string => {
   const h = date.getHours().toString().padStart(2, "0");
   const m = date.getMinutes().toString().padStart(2, "0");
@@ -31,7 +33,9 @@ const timeToDate = (timeStr: string): Date => {
   return d;
 };
 
+// === Main Component ===
 export default function LockerSleep() {
+  // === State & Refs ===
   const router = useRouter();
   const [isActive, setIsActive] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -41,11 +45,13 @@ export default function LockerSleep() {
   const [showEndPicker, setShowEndPicker] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // === Service Sync Function ===
   const syncServiceStatus = useCallback(async () => {
     const running = await AppLocker.isServiceRunning();
     setIsActive(running);
   }, []);
 
+  // === Effects ===
   useEffect(() => {
     NavigationBar.setBehaviorAsync("overlay-swipe");
     NavigationBar.setVisibilityAsync("hidden");
@@ -68,6 +74,7 @@ export default function LockerSleep() {
     }, [syncServiceStatus])
   );
 
+  // === Action Handlers ===
   // Quick Test: set window = now → now+2 minutes
   const handleQuickTest = () => {
     const now = new Date();
@@ -107,6 +114,7 @@ export default function LockerSleep() {
     Linking.openURL("tel:");
   };
 
+  // === Render / UI ===
   return (
     <View style={styles.container}>
       <ImageBackground
@@ -256,6 +264,7 @@ export default function LockerSleep() {
   );
 }
 
+// === Styles Section ===
 const styles = StyleSheet.create({
   container: { flex: 1 },
   background: { flex: 1 },

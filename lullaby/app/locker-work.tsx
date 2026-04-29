@@ -1,18 +1,20 @@
-import React, { useState, useEffect, useRef } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ImageBackground,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-} from "react-native";
-import { useRouter } from "expo-router";
-import * as NavigationBar from "expo-navigation-bar";
+// === Imports Section ===
 import { BlurView } from "expo-blur";
+import * as NavigationBar from "expo-navigation-bar";
+import { useRouter } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Alert,
+  ImageBackground,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import AppLocker from "../modules/AppLocker";
 
+// === Constants ===
 const GRACE_OPTIONS = [
   { label: "1 min ⚡", value: 1, isTest: true },
   { label: "30 min", value: 30 },
@@ -20,7 +22,9 @@ const GRACE_OPTIONS = [
   { label: "60 min", value: 60 },
 ];
 
+// === Main Component ===
 export default function LockerWork() {
+  // === State & Refs ===
   const router = useRouter();
   const [selectedGrace, setSelectedGrace] = useState<1 | 30 | 40 | 60>(30);
   const [isActive, setIsActive] = useState(false);
@@ -28,6 +32,7 @@ export default function LockerWork() {
   const [remainingSeconds, setRemainingSeconds] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // === Effects ===
   useEffect(() => {
     NavigationBar.setBehaviorAsync("overlay-swipe");
     NavigationBar.setVisibilityAsync("hidden");
@@ -39,6 +44,7 @@ export default function LockerWork() {
     };
   }, []);
 
+  // === Countdown Logic ===
   const startCountdown = (minutes: number) => {
     if (timerRef.current) clearInterval(timerRef.current);
     setRemainingSeconds(minutes * 60);
@@ -58,6 +64,7 @@ export default function LockerWork() {
     setRemainingSeconds(0);
   };
 
+  // === Action Handlers ===
   const handleStart = async () => {
     setLoading(true);
     try {
@@ -79,12 +86,14 @@ export default function LockerWork() {
 
   // Stop tidak diizinkan dari UI — hanya bisa dari notifikasi sistem
 
+  // === Formatter Helper ===
   const formatCountdown = (secs: number): string => {
     const m = Math.floor(secs / 60).toString().padStart(2, "0");
     const s = (secs % 60).toString().padStart(2, "0");
     return `${m}:${s}`;
   };
 
+  // === Render / UI ===
   return (
     <View style={styles.container}>
       <ImageBackground
@@ -98,6 +107,7 @@ export default function LockerWork() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          {/* Header */}
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Text style={styles.backText}>‹ Back</Text>
           </TouchableOpacity>
@@ -167,8 +177,8 @@ export default function LockerWork() {
                 {loading
                   ? "Starting..."
                   : selectedGrace === 1
-                  ? "▶ Start Work Mode (1 min – Test)"
-                  : `▶ Start Work Mode (${selectedGrace} min)`}
+                    ? "▶ Start Work Mode (1 min – Test)"
+                    : `▶ Start Work Mode (${selectedGrace} min)`}
               </Text>
             </TouchableOpacity>
           )}
@@ -190,6 +200,7 @@ export default function LockerWork() {
   );
 }
 
+// === Styles Section ===
 const styles = StyleSheet.create({
   container: { flex: 1 },
   background: { flex: 1 },
